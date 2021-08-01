@@ -1,0 +1,150 @@
+﻿Build1=Default,sqldemo.b4a
+File1=main.bal
+FileGroup1=Default Group
+Group=Default Group
+Library1=core
+Library2=sql
+ManifestCode=
+NumberOfFiles=1
+NumberOfLibraries=2
+NumberOfModules=0
+Version=11
+@EndOfDesignText@
+#Region Module Attributes
+	#FullScreen: False
+	#IncludeTitle: True
+	#ApplicationLabel: SQLDemo
+	#VersionCode: 1
+	#VersionName: 
+	#SupportedOrientations: portrait
+	#CanInstallToExternalStorage: False
+#End Region
+
+'Activity module
+Sub Process_Globals
+	Dim SQL1 As SQL
+	Dim cursor1 As Cursor
+End Sub
+
+Sub Globals
+	Dim txtUsername As EditText
+	Dim txtPassword As EditText
+	Dim txtAge As EditText
+	Dim txtCountry As EditText
+	Dim LVDb As ListView
+	Dim cmdAdd As Button
+	Dim cmdDelete As Button
+	Dim cmdEdit As Button
+	Dim ID As String
+
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+
+	Activity.LoadLayout("main")
+	If File.Exists(File.DirInternal,"db.sql") = False Then
+		File.Copy(File.DirAssets,"db.sql",File.DirInternal,"db.sql")
+	End If
+	
+	If SQL1.IsInitialized = False Then
+		SQL1.Initialize(File.DirInternal, "db.sql", False)
+	End If
+	
+	DBload
+	
+	
+End Sub
+
+Sub Activity_Resume
+
+End Sub
+
+Sub Activity_Pause (UserClosed As Boolean)
+
+End Sub
+
+Sub DBload
+LVDb.Clear'need to clear the list
+	cursor1 = SQL1.ExecQuery("SELECT * FROM Users")
+	LVDb.SingleLineLayout.ItemHeight = 60
+	LVDb.SingleLineLayout.Label.TextSize = 20
+	LVDb.SingleLineLayout.Label.Left = 0
+	LVDb.SingleLineLayout.label.TextColor = Colors.Black
+	LVDb.SingleLineLayout.label.Color = Colors.White
+	LVDb.SingleLineLayout.label.Gravity = Gravity.RIGHT
+For i = 0 To cursor1.RowCount - 1
+cursor1.Position = i
+LVDb.AddSingleLine(cursor1.GetString("ID")& "|" &cursor1.GetString("Username"))
+
+Next
+End Sub
+
+Sub cmdAdd_Click
+		
+	If txtUsername.Text = "" Or txtPassword.Text = "" Then
+		Msgbox("You have to enter all fields","Missed data field")
+Else
+	
+	'Grab the last ID number which is the highest number
+		cursor1 = SQL1.ExecQuery("SELECT ID FROM Users")
+	If cursor1.RowCount > 0 Then
+		For i = 0 To cursor1.RowCount - 1	
+	cursor1.Position = i
+	
+Next
+
+End If
+		SQL1.ExecNonQuery("INSERT INTO Users  (Username, Password,Age,Country) VALUES('" & txtUsername.Text & "','" & txtPassword.Text & "','" & txtAge.Text & "','" & txtCountry.Text & "')")
+	DBload
+	txtUsername.Text = ""
+	txtPassword.Text = ""
+	txtAge.Text = ""
+	txtCountry.Text = ""
+	txtUsername.RequestFocus
+End If
+
+
+End Sub
+Sub cmdDelete_Click
+	
+	
+	SQL1.ExecNonQuery("DELETE FROM Users where ID = '" &ID & "' ")
+	DBload
+	txtUsername.Text = ""
+	txtPassword.Text =""
+	txtAge.Text = ""
+	txtCountry.Text =""
+	
+	
+End Sub
+
+Sub LVDb_ItemClick (Position As Int, Value As Object)' click on the entry in the list
+Dim idvalue As String
+Dim countIt As Int
+
+idvalue = Value
+countIt = idvalue.IndexOf("|") 'find location of sperator
+idvalue = idvalue.SubString2(0,countIt) 'find first part of label text
+ID = idvalue
+	cursor1 = SQL1.ExecQuery("SELECT * FROM Users where ID = '" & ID & "' ")
+For i = 0 To cursor1.RowCount - 1
+cursor1.Position = i
+	txtUsername.text=cursor1.getString("Username")
+	txtPassword.text=cursor1.getString("Password")
+	txtAge.Text=cursor1.getString("Age")
+	txtCountry.Text=cursor1.getString("Country")
+Next
+End Sub
+
+Sub cmdEdit_Click
+ If txtUsername.Text = "" Or txtPassword.Text = "" Then
+		Msgbox("Select item to edit","Missed data item")
+Else
+		SQL1.ExecNonQuery("UPDATE Users set Username ='"& txtUsername.text &"',Password ='"& txtPassword.text &"',Age ="& txtAge.text &",Country ='"& txtCountry.text &"' WHERE ID = " & ID)
+	DBload
+End If
+
+End Sub
+Sub cmdExit_Click
+	Activity.finish
+	End Sub
